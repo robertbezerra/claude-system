@@ -343,6 +343,17 @@
           }
         ]
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'BLOCKED: Native CC worktree creation disabled. Use orchestrator-managed .worktrees/ only.' >&2; exit 2",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

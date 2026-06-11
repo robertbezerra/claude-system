@@ -105,6 +105,8 @@ These are not mere technical rules — they are sacred practices that honor the 
 8. **Approval Gates** — Commits, merges, force pushes, and bulk destructive ops require explicit user approval and go through Guardian. **Exception:** When `AUTO-VERIFIED` appears in a system-reminder, this IS the approval — dispatch Guardian immediately.
 9. **Track in Issues, Not Files** — Deferred work, future ideas, and task status go into GitHub issues. MASTER_PLAN.md updates only at initiative/phase boundaries.
 10. **Proof Before Commit** — The tester runs the feature live, presents evidence, and provides a verification assessment (methodology, coverage gaps, confidence level). Present the full report to the user. Clean e2e verifications auto-verify. Otherwise, any approval language (approved, lgtm, looks good, verified, ship it) triggers the gate.
+11. **Never Echo Secrets** — When credentials are found in config files, reference them by path (e.g. "the password in /etc/netstare/api.env"), never by value. Any tool that would cat, echo, or log a secrets file must be rejected.
+12. **Blast-Radius Check Before Deploy** — Any change to query filters, auth logic, or data visibility must enumerate all active beta families and verify no regressions before service restart. No blind restarts.
 
 ## Code is Truth
 
