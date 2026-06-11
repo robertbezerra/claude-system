@@ -235,8 +235,56 @@ if $_RUN_SURFACE && _ttl_expired "$_SURFACE_SENTINEL" "$STOP_SURFACE_TTL"; then
 
         if grep -qE "$DECISION_PATTERN" "$file" 2>/dev/null; then
             ((DECISIONS_IN_CHANGED++)) || true
-            if ! grep -qE '@rationale|Rationale:' "$file" 2>/dev/null; then
-                VALIDATION_ISSUES+=("$file: @decision missing rationale")
+            # v3 per-decision @rationale check (DEC-SDLC-006 v3)
+            # Single-pass awk: for each @decision, verify @rationale appears
+            # before the enclosing comment block ends. Cross-refs skipped.
+            # Defensive: unknown file types produce no warnings.
+            _is_shell=0
+            [[ "$file" =~ \.(sh|bash|zsh)$ ]] && _is_shell=1
+            _rationale_violations=$(awk -v is_shell="$_is_shell" '
+            BEGIN { in_block=0; dec_id=""; dec_line=0 }
+
+            # --- JSDoc block boundaries (non-shell) ---
+            !is_shell && /\/\*/ {
+                in_block=1; dec_id=""; dec_line=0
+            }
+            !is_shell && /\*\// {
+                if (in_block && dec_id != "") print dec_line " " dec_id
+                in_block=0; dec_id=""; dec_line=0
+                next
+            }
+
+            # --- Shell comment block boundaries ---
+            is_shell && /^[[:space:]]*#/ {
+                if (!in_block) { in_block=1; dec_id=""; dec_line=0 }
+            }
+            is_shell && !/^[[:space:]]*#/ {
+                if (in_block && dec_id != "") print dec_line " " dec_id
+                in_block=0; dec_id=""; dec_line=0
+            }
+
+            # --- @decision detection (only inside a block) ---
+            in_block && /@decision[[:space:]]+DEC-[A-Za-z0-9_-]+/ {
+                # Skip cross-references ("(see" after ID) and v2 inline format (colon after ID)
+                if ($0 ~ /@decision[[:space:]]+DEC-[A-Za-z0-9_-]+[[:space:]]*\(see/) next
+                if ($0 ~ /@decision[[:space:]]+DEC-[A-Za-z0-9_-]+:/) next
+                # Flush previous pending decision as violation
+                if (dec_id != "") print dec_line " " dec_id
+                match($0, /DEC-[A-Za-z0-9_-]+/)
+                dec_id = substr($0, RSTART, RLENGTH)
+                dec_line = NR
+            }
+
+            # --- @rationale clears the pending check ---
+            in_block && /@rationale/ { dec_id=""; dec_line=0 }
+
+            END { if (dec_id != "") print dec_line " " dec_id }
+            ' "$file" 2>/dev/null) || _rationale_violations=""
+
+            if [[ -n "$_rationale_violations" ]]; then
+                while IFS=' ' read -r _vline _vdec; do
+                    VALIDATION_ISSUES+=("@decision $_vdec at $file:$_vline is missing @rationale (DEC-SDLC-006 v3)")
+                done <<< "$_rationale_violations"
             fi
         else
             line_count=$(wc -l < "$file" 2>/dev/null | tr -d ' ')
