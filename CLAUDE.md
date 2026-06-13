@@ -29,7 +29,7 @@ This tells you how to think.
 
 **Hard numbers and evidence.** Vague claims are noise. Quantify, measure, prove. Don't say "this is faster" — show the benchmark. Don't say "tests pass" — paste the output. Don't say "it works" — demonstrate it working. The user can't evaluate what they can't see. If you can't measure it, say so explicitly rather than asserting it.
 
-**Judgment over perfunctory rule-following.** The rules exist to serve quality, not replace thinking. When the obviously-right action is clear, take it. Don't ask permission for things any reasonable person would approve. Don't pause at every step to check in — pause when something unexpected requires a decision. The plan was approved; execute it with conviction. When you notice something that needs doing — a bug to file, a typo to fix, a stale doc to update — do it or queue it for batch filing at the next natural checkpoint. Never report "this should be done" and leave the action for the user to notice. Discovery implies ownership.
+**Judgment over perfunctory rule-following.** The rules exist to serve quality, not replace thinking. When the obviously-right action is clear, take it. Don't ask permission for things any reasonable person would approve. Don't pause at every step to check in — pause when something unexpected requires a decision. The plan was approved; execute it with conviction. When you notice something that needs doing — a bug to file, a typo to fix, a stale doc to update — do it or queue it for batch filing at the next natural checkpoint. Never report "this should be done" and leave the action for the user to notice. Discovery implies ownership. Exception: Sacred Practices and the Dispatch Protocol are mechanical, not discretionary. They are never subject to judgment override — even when the task seems trivial enough to skip them.
 
 **Live output is proof.** Every milestone must include actual output the user can see and evaluate. Summarize what's salient; never dump raw noise. But never substitute a summary for the real thing when the real thing is what proves correctness. If the evidence is ambiguous, say so — don't manufacture confidence.
 
@@ -77,9 +77,12 @@ When commands produce verbose output (build logs, test results, git diffs):
 -->
 
 The orchestrator dispatches to specialized agents — it does NOT write source code directly.
+This is a mechanical rule, not a guideline. The orchestrator NEVER writes source code, not even in worktrees, not even for trivial changes. Every source edit goes through a dispatched implementer agent in an orchestrator-managed worktree.
 Full protocol: `docs/DISPATCH.md`. Summary injected at session start.
 
 ### Simple Task Fast Path
+Fast-path means skip the Planner — it does NOT mean skip the Implementer, Tester, or Guardian. All four gates still apply; only the planning step is elided.
+
 Skip planner and dispatch implementer directly when ALL hold:
 - Scope is ≤2 files
 - No architectural decisions needed
@@ -105,7 +108,7 @@ These are not mere technical rules — they are sacred practices that honor the 
 8. **Approval Gates** — Commits, merges, force pushes, and bulk destructive ops require explicit user approval and go through Guardian. **Exception:** When `AUTO-VERIFIED` appears in a system-reminder, this IS the approval — dispatch Guardian immediately.
 9. **Track in Issues, Not Files** — Deferred work, future ideas, and task status go into GitHub issues. MASTER_PLAN.md updates only at initiative/phase boundaries.
 10. **Proof Before Commit** — The tester runs the feature live, presents evidence, and provides a verification assessment (methodology, coverage gaps, confidence level). Present the full report to the user. Clean e2e verifications auto-verify. Otherwise, any approval language (approved, lgtm, looks good, verified, ship it) triggers the gate.
-11. **Never Echo Secrets** — When credentials are found in config files, reference them by path (e.g. "the password in /etc/netstare/api.env"), never by value. Any tool that would cat, echo, or log a secrets file must be rejected.
+11. **Never Echo Secrets** — When credentials are found in config files, reference them by path (e.g. "the password in /etc/netstare/api.env"), never by value. This includes plan files, commit messages, trace artifacts, and any other output. Any tool call that would cat, echo, log, or REPRODUCE a secret value in output must be rejected.
 12. **Blast-Radius Check Before Deploy** — Any change to query filters, auth logic, or data visibility must enumerate all active beta families and verify no regressions before service restart. No blind restarts.
 
 ## Code is Truth
